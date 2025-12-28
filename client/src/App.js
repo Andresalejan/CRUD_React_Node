@@ -100,8 +100,8 @@ function App() {
   };
 
   //Metodo para eliminar usuarios en la base de datos
-  const deleteUser = (val) => {
-    Swal.fire({
+  const deleteUser = async (val) => {
+    const result = await Swal.fire({
       title: "Eliminar",
       html: `<i>¿Seguro que desea eliminar a <strong>${val.nombre}</strong>?</i>`,
       icon: "warning",
@@ -111,31 +111,34 @@ function App() {
       confirmButtonText: "Sí",
       cancelButtonText: "No",
       reverseButtons: true, // Invierte el orden de los botones
-    }).then((result) => {
-      setLoading(true);
-      if (result.isConfirmed) {
-        Axios.delete(`http://localhost:3001/delete/${val.id}`).then(() => {
-          getEmpleados();
-          limpiarCampos();
-          Swal.fire({
-            title: "Registro eliminado exitosamente",
-            html: `<i>Se ha eliminado el registro de <strong>${val.nombre}</strong> correctamente</i>`,
-            icon: "success",
-          });
-        }).catch((error) => {
-          Swal.fire({
-            title: "Error",
-            text: "No se pudo eliminar el usuario",
-            icon: "error",
-          });
-          console.error("Error al eliminar el usuario:", error);
-        })
-        .finally(() => {
-          setLoading(false); // Desactivamos la carga cuando termine el proceso
-        });
+    });
+
+    // Si el usuario presiona "No" o cierra el modal, no hacemos nada
+    if (!result.isConfirmed) return;
+
+    setLoading(true);
+    try {
+      await Axios.delete(`http://localhost:3001/delete/${val.id}`);
+      getEmpleados();
+      limpiarCampos();
+      setLoading(false); // Apagar loader antes del Swal para no bloquearlo
+      await Swal.fire({
+        title: "Registro eliminado exitosamente",
+        html: `<i>Se ha eliminado el registro de <strong>${val.nombre}</strong> correctamente</i>`,
+        icon: "success",
+      });
+    } catch (error) {
+      setLoading(false); // Apagar loader antes del Swal para no bloquearlo
+      Swal.fire({
+        title: "Error",
+        text: "No se pudo eliminar el usuario",
+        icon: "error",
+      });
+      console.error("Error al eliminar el usuario:", error);
+    } finally {
+      setLoading(false); // Asegura apagado si algo cambia en el flujo
     }
-  });
-};
+  };
 
   const limpiarCampos = () => {
 
